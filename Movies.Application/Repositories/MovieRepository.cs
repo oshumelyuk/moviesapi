@@ -92,6 +92,7 @@ public class MovieRepository : IMovieRepository
     {
         using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
 
+        var offset = (options.Page - 1) * options.PageSize; 
         var orderClause = string.Empty;
         if (options.SortField is not null)
         {
@@ -115,9 +116,12 @@ public class MovieRepository : IMovieRepository
                                    where (@title is null or LOWER(m.title) like ('%' || @title || '%'))
                                    and (@yearOfRelease is null or m.yearofrelease = @yearOfRelease)
                                    group by id, userrating {orderClause}
+                                   limit @pagesize offset @offset 
                                    """, new {userId = options.UserId, 
                                             title = options.Title?.ToLower(), 
-                                            yearOfRelease = options.YearOfRelease}, 
+                                            yearOfRelease = options.YearOfRelease,
+                                            pagesize = options.PageSize,
+                                            offset }, 
                                     cancellationToken: token ));
 
         return result.Select(x => new Movie()
@@ -188,5 +192,23 @@ public class MovieRepository : IMovieRepository
             new CommandDefinition($"""
                                    select count(1) from movies where id = @id
                                    """, new {id}));
+    }
+
+    public async Task<int> GetCountAsync(GetAllMoviesOptions options, CancellationToken token)
+    {
+        using var connection = await _dbConnectionFactory.CreateConnectionAsync(token);
+
+        var result = await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition($"""
+                                   SELECT count(1) 
+                                   from movies m 
+                                   where (@title is null or LOWER(m.title) like ('%' || @title || '%'))
+                                   and (@yearOfRelease is null or m.yearofrelease = @yearOfRelease)
+                                   """, new { 
+                                            title = options.Title?.ToLower(), 
+                                            yearOfRelease = options.YearOfRelease,
+                                            }, 
+                                    cancellationToken: token ));
+        return result;
     }
 }

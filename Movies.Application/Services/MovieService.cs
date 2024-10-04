@@ -71,5 +71,11 @@ public class MovieService : IMovieService
     {
         return _movieRepository.DeleteByIdAsync(id, token);
     }
+
+    public async Task<int> GetCountAsync(GetAllMoviesOptions options, CancellationToken token)
+    {
+        await _getAllMoviesOptionsValidator.ValidateAndThrowAsync(options);
+        return await _movieRepository.GetCountAsync(options, token);
+    }
 }
 
