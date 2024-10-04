@@ -9,6 +9,7 @@ using Asp.Versioning;
 namespace Movies.Api.Controllers;
 
 [ApiVersion(1.0)]
+[ApiVersion(2.0)]
 [ApiController]
 public class MoviesController : ControllerBase
 {
@@ -29,15 +30,16 @@ public class MoviesController : ControllerBase
         var created =  await _movieService.CreateAsync(movie, token);
         if (created)
         {
-            return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id }, movie);
+            return CreatedAtAction(nameof(GetV1), new { idOrSlug = movie.Id }, movie);
         } 
         
         return BadRequest($"movie '{movie.Title}' already exists in the library");
     }
     
+    [MapToApiVersion(1.0)]
     [AllowAnonymous]
     [HttpGet(ApiEndpoints.Movies.Get)]
-    public async Task<IActionResult> Get([FromRoute] string idOrSlug,
+    public async Task<IActionResult> GetV1([FromRoute] string idOrSlug,
         CancellationToken token)
     {
         var userId = HttpContext.GetUserId();
