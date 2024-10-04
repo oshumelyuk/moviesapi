@@ -4,9 +4,11 @@ using Movies.Api.Auth;
 using Movies.Api.Mapping;
 using Movies.Application.Services;
 using Movies.Contracts.Requests;
+using Asp.Versioning;
 
 namespace Movies.Api.Controllers;
 
+[ApiVersion(1.0)]
 [ApiController]
 public class MoviesController : ControllerBase
 {
