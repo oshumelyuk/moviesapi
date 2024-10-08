@@ -55,6 +55,7 @@ builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwa
 builder.Services.AddSwaggerGen(x => x.OperationFilter<SwaggerDefaultValues>());
 
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
+builder.Services.AddResponseCaching();
 builder.Services.AddControllers();
 builder.Services.AddApplication();
 builder.Services.AddDatabase(config["Database:ConnectionString"]!);
@@ -78,6 +79,8 @@ app.MapHealthChecks("_health");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+//app.UseCors();
+app.UseResponseCaching();
 app.UseMiddleware<ValidationMappingMiddleware>();
 app.MapControllers();
 
