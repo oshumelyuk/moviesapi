@@ -78,6 +78,8 @@ app.MapHealthChecks("_health");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+//app.UseCors();
+app.UseResponseCaching();
 app.UseMiddleware<ValidationMappingMiddleware>();
 app.MapControllers();
 
