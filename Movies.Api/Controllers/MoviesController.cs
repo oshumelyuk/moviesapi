@@ -5,6 +5,7 @@ using Movies.Api.Mapping;
 using Movies.Application.Services;
 using Movies.Contracts.Requests;
 using Asp.Versioning;
+using Microsoft.AspNetCore.OutputCaching;
 using Movies.Contracts.Responses;
 
 namespace Movies.Api.Controllers;
@@ -15,10 +16,12 @@ namespace Movies.Api.Controllers;
 public class MoviesController : ControllerBase
 {
     private readonly IMovieService _movieService;
+    private readonly IOutputCacheStore _outputCacheStore;
 
-    public MoviesController(IMovieService movieService)
+    public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore)
     {
         _movieService = movieService;
+        _outputCacheStore = outputCacheStore;
     }
 
     [Authorize(AuthConstants.TrustedMemberPolicyName)]
@@ -33,6 +36,7 @@ public class MoviesController : ControllerBase
         var created =  await _movieService.CreateAsync(movie, token);
         if (created)
         {
+            await _outputCacheStore.EvictByTagAsync("movies", token);
             return CreatedAtAction(nameof(GetV1), new { idOrSlug = movie.Id }, movie);
         } 
         
@@ -42,7 +46,7 @@ public class MoviesController : ControllerBase
     [MapToApiVersion(1.0)]
     [AllowAnonymous]
     [HttpGet(ApiEndpoints.Movies.Get)]
-    [ResponseCache(Duration = 30, VaryByHeader = "Accept, Accept-Encoding", Location = ResponseCacheLocation.Any)]
+    [OutputCache(PolicyName = "MovieCache")]
     [ProducesResponseType(typeof(MovieResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetV1([FromRoute] string idOrSlug,
@@ -60,7 +64,7 @@ public class MoviesController : ControllerBase
     
     [AllowAnonymous]
     [HttpGet(ApiEndpoints.Movies.GetAll)]
-    [ResponseCache(Duration = 30, VaryByHeader = "Accept, Accept-Encoding", VaryByQueryKeys = new []{"title", "sortby", "yearofrelease", "pagesize", "page"}, Location = ResponseCacheLocation.Any)]
+    [OutputCache(PolicyName = "MovieCache")]
     [ProducesResponseType(typeof(MoviesResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] GetAllMoviesRequest request,
@@ -86,6 +90,7 @@ public class MoviesController : ControllerBase
         var movie = request.MapToMovie(id);
         var updated = await _movieService.UpdateAsync(movie, userId, token);
         if (updated is null) return NotFound();
+        await _outputCacheStore.EvictByTagAsync("movies", token);
         return Ok(updated.MapToMovieResponse());
     }
     
@@ -98,6 +103,7 @@ public class MoviesController : ControllerBase
     {
         var deleted = await _movieService.DeleteByIdAsync(id, token);
         if (!deleted) return NotFound();
+        await _outputCacheStore.EvictByTagAsync("movies", token);
         return Ok();
     }
 }
